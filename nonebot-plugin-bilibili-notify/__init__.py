@@ -52,37 +52,50 @@ __plugin_meta__ = PluginMetadata(
     """,
 )
 
-sub = on_command(
-    "订阅直播",
-    # 需要是群管理员或更高权限
+# 修改订阅命令定义
+sub = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("订阅直播", "/订阅直播")),
     permission=GROUP_ADMIN | GROUP_OWNER | SUPERUSER,
     priority=5,
     block=True
 )
-unsub = on_command(
-    "取消订阅",
-    # 需要是群管理员或更高权限
+
+# 修改取消订阅命令
+unsub = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("取消订阅", "/取消订阅")),
     permission=GROUP_ADMIN | GROUP_OWNER | SUPERUSER,
     priority=5,
     block=True
 )
-sub_list = on_command("订阅列表", permission=GROUP, priority=5, block=True)
 
-# 添加新的命令
-admin_cmd = on_command("订阅管理", permission=GROUP, priority=5, block=True)
-
-# 添加管理员列表命令
-admin_list = on_command(
-    "管理员列表",
-    aliases={"订阅管员", "订阅管理列表"},
+# 修改订阅列表命令
+sub_list = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("订阅列表", "/订阅列表")),
     permission=GROUP,
     priority=5,
     block=True
 )
 
-# 修改帮助命令定义，只保留一个命令名
-help_cmd = on_command(
-    "bilihelp",
+# 添加新的命令
+admin_cmd = on_command(
+    "",  # 移除 "订阅管理" 前缀
+    rule=keyword("订阅管理"),  # 使用关键词匹配
+    permission=GROUP,
+    priority=5,
+    block=True
+)
+
+# 添加管理员列表命令
+admin_list = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("管理员列表", "订阅管员", "订阅管理列表")),
+    permission=GROUP,
+    priority=5,
+    block=True
+)
+
+# 修改帮助命令
+help_cmd = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("bilihelp", "/bilihelp")),
     permission=GROUP,
     priority=1,
     block=True
@@ -207,6 +220,7 @@ async def handle_sub(bot: Bot, event: GroupMessageEvent):
         
     msg = str(event.get_message()).strip()
     msg = msg.replace("订阅直播", "").strip()
+    msg = msg.replace("/订阅直播", "").strip()  # 添加这行来处理带斜杠的情况
     
     if not msg.isdigit():
         await sub.finish("请输入正确的UID")
@@ -404,7 +418,7 @@ async def handle_unsub_confirm(bot: Bot, event: GroupMessageEvent, confirm: str 
     else:
         await unsub.finish("取消订阅失败，请稍后重试")
 
-# 添加超时处理
+# 添���超时处理
 @scheduler.scheduled_job('interval', minutes=5)
 async def clean_unsub_status():
     """清理超时的取消订阅状态"""
@@ -501,7 +515,7 @@ async def handle_sub_list_number(event: GroupMessageEvent, number: str = EventPl
             await sub_list.finish(f"未找到房间 {room_id} 的信息")
             
     except ValueError:
-        # 输入不是数字，直接结束，不发送消息
+        # 输入不是数字，直接结束，不发送消
         del sub_list_status[group_id]
         await sub_list.finish()
         return
@@ -881,7 +895,7 @@ async def handle_account_status(bot: Bot, event: GroupMessageEvent):
                         "🔑 账号登录状态\n"
                         "状态：❌ Cookie已失效\n"
                         "请重新登录：\n"
-                        "1. 送 订阅直播 [UID] ���令\n"
+                        "1. 送 订阅直播 [UID] 令\n"
                         "2. 使用B站手机客户端扫描二码\n"
                         "3. 在手机上确认登录"
                     )
@@ -1020,7 +1034,7 @@ async def handle_proxy(bot: Bot, event: GroupMessageEvent):
         return
         
     if not (msg.startswith("http://") or msg.startswith("https://")):
-        await proxy_cmd.finish("代理格式错误，必须以 http:// 或 https:// 开头")
+        await proxy_cmd.finish("代理格式���误，必须以 http:// 或 https:// 开头")
         return
         
     plugin_config.proxy = msg
@@ -1211,9 +1225,8 @@ async def capture_live_screenshots():
     print("=== 截图获取完成 ===\n")
 
 # 添加截图命令
-screenshot_cmd = on_command(
-    "截图",
-    aliases={"直播截图", "查看直播"},
+screenshot_cmd = on_message(
+    rule=lambda event: str(event.get_message()).strip().startswith(("截图", "直播截图", "查看直播")),
     permission=GROUP,
     priority=5,
     block=True
